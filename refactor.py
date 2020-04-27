@@ -5,7 +5,7 @@ import re
 class Refactor:
     def __init__(self):
         self.suffix = input(
-            'ENTER SUFFIX TO APPEND TO HTML/CSS/JS CLASS NAMES:')
+            'ENTER SUFFIX TO APPEND TO HTML/CSS/JS CLASS NAMES: ')
         self.styles = {}
         self.css = None
         self.html = None
@@ -54,6 +54,14 @@ class Refactor:
         regex = re.compile("|".join(map(re.escape, dict.keys())))
         return regex.sub(lambda match: dict[match.group(0)], html)
 
+    def __refactor_line(self, line):
+        for old_value in self.styles.keys():
+            if old_value in line:
+                line = line.replace(old_value, self.styles[old_value])
+            else:
+                line = line
+        return line
+
     # =============================== USER METHODS ===============================
 
     def create_styles(self):
@@ -82,12 +90,24 @@ class Refactor:
             with open('refactor.html', 'w') as fp:
                 fp.write(data)
 
-    # TODO: Need a clean code to simply append the suffix to all CSS/HTML/JS classes
+        print(f"FILES REFACTORED WITH SUFFIX: '{self.suffix}.'")
+
+    # TODO: Need a clean code to simply append the suffix to all CSS/HTML/JS classes this is not quite there yet.
+
     def refactor(self):
-        pass
+        new_html = ''
+        html = self.html.splitlines(True)
+        for line in html:
+            if 'class' in line:
+                line = self.__refactor_line(line)
+                new_html += line+' '
+            else:
+                new_html += line+' '
+
+        self.write(new_html)
 
 
 if __name__ == "__main__":
     rf = Refactor()
     rf.create_styles()
-    rf.write()
+    rf.refactor()
