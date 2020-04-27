@@ -106,6 +106,19 @@ class Refactor:
 
         self.write(new_html)
 
+     # =============================== SANDBOX ===============================
+
+    # getting closer
+    def sandbox(self):
+        html = self.html.splitlines(True)
+        pattern = re.compile(r"""class=\".*\"""")
+        for line in html:
+            m = re.search(pattern, line)
+            if m != None:
+                print(m)
+            else:
+                print('Not found', line)
+
 
 if __name__ == "__main__":
     rf = Refactor()
