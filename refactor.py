@@ -156,6 +156,12 @@ class Refactor:
 
         self.write(html)
 
+    # TODO: write func to account for # of new lines and spaces __ added to html file to not overwrite existing data
+
+    def _add_white_space(self, html):
+        suffix_length = len(self.suffix)
+        return html
+
 
 if __name__ == "__main__":
     rf = Refactor()
