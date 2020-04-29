@@ -11,6 +11,7 @@ class Refactor:
         self.css = None
         self.html = None
         self.js = None
+        self.matchlist = None
 
     def __repr__(self):
         try:
@@ -55,11 +56,14 @@ class Refactor:
             self.styles[old_value] = new_value
 
     def __apply_regex_sub(self, old_value, class_section):
-        pattern = re.compile(''+old_value+'[^a-zA-Z-_]\"?')
+        pattern = re.compile(r"\s?class=\".*"+(old_value)+".*\""
+                             )
+        pattern_raw = r"\s?class=\".*"+(old_value)+".*\""
         m = re.search(pattern, class_section)
         if m != None:
+            group = m.group(0)
             sub = re.sub(
-                pattern, self.styles[old_value], class_section)
+                pattern_raw, self.styles[old_value], class_section, count=1, flags=re.DEBUG)
             class_section += sub
         else:
             class_section = class_section
@@ -69,8 +73,11 @@ class Refactor:
     def __find_old_value(self, line):
         for old_value in self.styles.keys():
             if old_value in line:
+                print('OLD_VAL:', old_value)
+                print(line)
                 line = self.__apply_regex_sub(
                     old_value, line)
+                print("NEW LINE:", line)
             else:
                 line = line
         return line
@@ -105,7 +112,6 @@ class Refactor:
                 class_section = line[m_start:m_end]
                 class_section = self.__find_old_value(class_section)
                 line = b_start + class_section + ' ' + b_end
-                print(m, line)
                 new_html += line+' '
             else:
                 new_html += line+' '
@@ -117,39 +123,45 @@ class Refactor:
 
     # =============================== SANDBOX ===============================
 
-    # def sandbox(self):
-    #     styles = self.styles
-    #     new_html = ''
-    #     html = self.html.splitlines(True)
-    #     pattern = re.compile(r"""class=\".*\"""")
-    #     for line in html:
-    #         m = re.search(pattern, line)
-    #         if m != None:
-    #             m_start, m_end = m.span()
-    #             b_start = line[0:m_start+1]
-    #             b_end = line[m_end:]
-    #             section = line[m_start:m_end]
-    #             for old_value in styles.keys():
-    #                 if old_value in section:
-    #                     pattern = re.compile(''+old_value+'[^a-zA-Z-_]')
-    #                     m = re.search(pattern, section)
-    #                     if m != None:
-    #                         print(old_value)
-    #                         print(section)
-    #                         sub = re.sub(pattern, styles[old_value], section)
-    #                         print(sub)
+    def re_html(self, html):
+        html = self.html
+        styles = self.styles
+        matchlist = self.matchlist
+        pattern = 'class="\.*(.*).*\"'
+        pattern_2 = 'class=\"(.[a-zA-Z-_ \d]+)\"'
+        matches = re.finditer(pattern_2, html, flags=re.M)
+        matches_tups = [(match.group(), match.span()) for match in matches]
 
-    #                 else:
-    #                     continue
-    #         else:
-    #             continue
+        for index, match in enumerate(matches_tups):
+            line = match[0]
+            print(index, line)
+            line_index = match[1]
+            line_start, line_end = line_index
+            new_line = ''
+            re_match = re.split(pattern_2, match[0])
+            print("1", re_match)
+            class_names = re_match[1].split()
+            print("2", class_names)
+            section = html[line_start:line_end]
 
-    #     for i in html:
-    #         new_html += i + ' '
+            for index2, class_name in enumerate(class_names):
+                for index3, style in enumerate(styles.keys()):
+                    if style == class_name:
+                        line = re.sub(''+(class_name)+'',
+                                      styles.get(style, line), line, count=1)
+                    else:
+                        continue
+            replace = line
+            html = html.replace(section, replace)
+
+        self.write(html)
 
 
 if __name__ == "__main__":
     rf = Refactor()
     rf.create_styles()
-    rf.refactor()
+    # rf.refactor()
     # rf.sandbox()
+    html = rf.html
+    rf.re_html(html)
+    matches = rf.matchlist
