@@ -90,32 +90,26 @@ class Refactor:
         pattern = 'class=\"(.[a-zA-Z-_ \d]+)\"'
         matches = re.finditer(pattern, html, flags=re.M)
         tups_of_matches = [(match.group(), match.span()) for match in matches]
-        # debug code to run py -i
+        # temp debug code to run py -i
         self.matchlist.append(tups_of_matches)
 
         for index, match in enumerate(tups_of_matches):
             line = match[0]
-            # print(index, line)
             line_index = match[1]
             line_start, line_end = line_index
             re_match = re.split(pattern, match[0])
-            # print("1", re_match)
             class_names = re_match[1].split()
-            # print("2", class_names)
             section = html[line_start:line_end]
             temp_line = line
 
             for index2, class_name in enumerate(class_names):
                 for index3, style in enumerate(styles.keys()):
                     if style == class_name and self.suffix not in class_name:
-                        # print(index3, "REPLACING:", style, line)
                         temp_line = re.sub(class_name,
                                            self.get_style_value(style), temp_line, count=1)
-                        # print(temp_line)
                     else:
                         continue
                 final_line = temp_line
-                # print(final_line)
             html = re.sub('('+line+')+', final_line, html)
 
         self.write(html)
