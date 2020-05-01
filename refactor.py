@@ -11,7 +11,7 @@ class Refactor:
         self.css = None
         self.html = None
         self.js = None
-        self.matchlist = None
+        self.matchlist = []
 
     def __repr__(self):
         try:
@@ -55,33 +55,6 @@ class Refactor:
             new_value = old_value+self.suffix
             self.styles[old_value] = new_value
 
-    # def __apply_regex_sub(self, old_value, class_section):
-    #     pattern = re.compile(r"\s?class=\".*"+(old_value)+".*\""
-    #                          )
-    #     pattern_raw = r"\s?class=\".*"+(old_value)+".*\""
-    #     m = re.search(pattern, class_section)
-    #     if m != None:
-    #         group = m.group(0)
-    #         sub = re.sub(
-    #             pattern_raw, self.styles[old_value], class_section, count=1, flags=re.DEBUG)
-    #         class_section += sub
-    #     else:
-    #         class_section = class_section
-
-    #     return class_section
-
-    # def __find_old_value(self, line):
-    #     for old_value in self.styles.keys():
-    #         if old_value in line:
-    #             print('OLD_VAL:', old_value)
-    #             print(line)
-    #             line = self.__apply_regex_sub(
-    #                 old_value, line)
-    #             print("NEW LINE:", line)
-    #         else:
-    #             line = line
-    #     return line
-
     # =============================== USER METHODS ===============================
 
     def create_styles(self):
@@ -97,31 +70,19 @@ class Refactor:
         with open('refactor.html', 'w') as fp:
             fp.write(data)
 
-        print(f"FILES REFACTORED WITH SUFFIX: '{self.suffix}.'")
-
-    # def refactor(self):
-    #     new_html = ''
-    #     html = self.html.splitlines(True)
-    #     pattern = re.compile(r"""class=\".*\"""")
-    #     for line in html:
-    #         m = re.search(pattern, line)
-    #         if m != None:
-    #             m_start, m_end = m.span()
-    #             b_start = line[0:m_start]
-    #             b_end = line[m_end:]
-    #             class_section = line[m_start:m_end]
-    #             class_section = self.__find_old_value(class_section)
-    #             line = b_start + class_section + ' ' + b_end
-    #             new_html += line+' '
-    #         else:
-    #             new_html += line+' '
-
-    #     self.write(new_html)
+        print(f"FILES REFACTORED WITH SUFFIX: '{self.suffix}'")
 
     def pp(self):
         print(*self.styles.items(), sep='\n')
 
     # =============================== SANDBOX ===============================
+
+    def get_style_value(self, value):
+        if self.suffix not in value:
+            value = self.styles.get(value)
+            return value
+        else:
+            print(f"ERROR. SUFFIX IN CLASS: {value}")
 
     def re_html(self, html):
         html = self.html
@@ -142,24 +103,22 @@ class Refactor:
             class_names = re_match[1].split()
             # print("2", class_names)
             section = html[line_start:line_end]
+            temp_line = line
 
             for index2, class_name in enumerate(class_names):
                 for index3, style in enumerate(styles.keys()):
-                    if style == class_name:
-                        line = re.sub(''+(class_name)+'',
-                                      styles.get(style, line), line, count=1)
+                    if style == class_name and self.suffix not in class_name:
+                        # print(index3, "REPLACING:", style, line)
+                        temp_line = re.sub(class_name,
+                                           self.get_style_value(style), temp_line, count=1)
+                        # print(temp_line)
                     else:
                         continue
-            new_line = line
-            html = html.replace(section, new_line)
+                final_line = temp_line
+                # print(final_line)
+            html = re.sub('('+line+')+', final_line, html)
 
         self.write(html)
-
-    # TODO: write func to account for # of new lines and spaces __ added to html file to not overwrite existing data
-
-    def __add_white_space(self, html):
-        suffix_length = len(self.suffix)
-        return html
 
 
 if __name__ == "__main__":
