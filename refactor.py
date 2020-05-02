@@ -111,11 +111,18 @@ class Refactor:
             for index2, class_name in enumerate(class_names):
                 for index3, style in enumerate(styles.keys()):
                     if style == class_name and self.suffix not in class_name:
-                        temp_line = re.sub(class_name,
-                                           self.get_style_value(style), temp_line, count=1)
+                        temp_line = re.sub('[^\-]'+class_name,
+                                           " "+self.get_style_value(style), temp_line, count=1)
                     else:
                         continue
+
                 final_line = temp_line
+                # regex sub is replacing "" in line.  This is a quick fix, but need to fix regex.
+                if final_line.startswith("class=\""):
+                    pass
+                else:
+                    final_line = final_line.replace("class=", "class=\"")
+
             html = re.sub('('+line+')+', final_line, html)
 
         self.write(html)
