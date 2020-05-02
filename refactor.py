@@ -117,7 +117,6 @@ class Refactor:
                         continue
 
                 final_line = temp_line
-                # regex sub is replacing "" in line.  This is a quick fix, but need to fix regex.
                 if final_line.startswith("class=\""):
                     pass
                 else:
