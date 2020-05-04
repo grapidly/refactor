@@ -17,7 +17,6 @@ class Refactor:
         self.css = None
         self.html = None
         self.js = None
-        self.matchlist = []
 
     def __repr__(self):
         try:
@@ -61,6 +60,45 @@ class Refactor:
             new_value = old_value+self.suffix
             self.styles[old_value] = new_value
 
+    def __prep_html(self):
+        html = self.html
+        styles = self.styles
+        pattern = 'class=\"(.[a-zA-Z-_ \d]+)\"'
+        matches = re.finditer(pattern, html, flags=re.M)
+        tups_of_matches = [(match.group(), match.span()) for match in matches]
+
+        return tups_of_matches, pattern, html
+
+    def __unpack_matches(self, matches, pattern, file_string):
+        for index, match in enumerate(matches):
+            line = match[0]
+            line_index = match[1]
+            line_start, line_end = line_index
+            re_match = re.split(pattern, match[0])
+            class_names = re_match[1].split()
+            section = file_string[line_start:line_end]
+            temp_line = line
+            final_line = ''
+
+            for index2, class_name in enumerate(class_names):
+                for index3, style in enumerate(self.styles.keys()):
+                    if style == class_name and self.suffix not in class_name:
+                        temp_line = re.sub('[^\-]'+class_name,
+                                           " "+self.get_style_value(style), temp_line, count=1)
+                    else:
+                        continue
+
+                final_line = temp_line
+
+                if final_line.startswith("class=\""):
+                    pass
+                else:
+                    final_line = final_line.replace("class=", "class=\"")
+
+            file_string = re.sub('('+line+')+', final_line, file_string)
+
+        self.write(file_string)
+
     # =============================== USER METHODS ===============================
 
     def create_styles(self):
@@ -91,40 +129,8 @@ class Refactor:
             print(f"ERROR. SUFFIX IN CLASS: {value}")
 
     def re_html(self, html):
-        html = self.html
-        styles = self.styles
-        pattern = 'class=\"(.[a-zA-Z-_ \d]+)\"'
-        matches = re.finditer(pattern, html, flags=re.M)
-        tups_of_matches = [(match.group(), match.span()) for match in matches]
-        # temp debug code to run py -i
-        self.matchlist.append(tups_of_matches)
-
-        for index, match in enumerate(tups_of_matches):
-            line = match[0]
-            line_index = match[1]
-            line_start, line_end = line_index
-            re_match = re.split(pattern, match[0])
-            class_names = re_match[1].split()
-            section = html[line_start:line_end]
-            temp_line = line
-
-            for index2, class_name in enumerate(class_names):
-                for index3, style in enumerate(styles.keys()):
-                    if style == class_name and self.suffix not in class_name:
-                        temp_line = re.sub('[^\-]'+class_name,
-                                           " "+self.get_style_value(style), temp_line, count=1)
-                    else:
-                        continue
-
-                final_line = temp_line
-                if final_line.startswith("class=\""):
-                    pass
-                else:
-                    final_line = final_line.replace("class=", "class=\"")
-
-            html = re.sub('('+line+')+', final_line, html)
-
-        self.write(html)
+        matches, pattern, html = self.__prep_html()
+        self.__unpack_matches(matches, pattern, html)
 
 
 if __name__ == "__main__":
