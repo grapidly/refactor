@@ -1,11 +1,8 @@
 # coding=utf8
 import re
 
-# TODO:
-# ============================================================================
+# =============================== BUGS ===============================
 #       BUG -- 'follow_frame-bottom' class in styles dict but NOT appending suffix.
-#       BUG -- TBD
-#       BUG -- TBD
 
 
 class Refactor:
@@ -27,7 +24,7 @@ class Refactor:
 
       # =============================== UTIL METHODS ===============================
 
-    def __load_data(self):
+    def __load_website_files(self):
         with open('test.css', 'r') as fp:
             self.css = fp.read()
         with open('test.html', 'r') as fp:
@@ -36,8 +33,8 @@ class Refactor:
             self.js = fp.read()
         return self.css, self.html, self.js
 
-    def __load_regex(self):
-        css, html, js = self.__load_data()
+    def __load_re_matches(self):
+        css, html, js = self.__load_website_files()
         css_re = r"""\.\D[^]['?#\s\r\n,{};:/\/\().]+"""
         html_re = r"""class=\".*\""""
         js_re = r""".*"""
@@ -49,18 +46,19 @@ class Refactor:
             js_re, js, re.MULTILINE | re.VERBOSE)
         return css_matches, html_matches, js_matches
 
-    def __create_dict(self, matchNum, match):
+    def __create_styles_dict(self, matchNum, match):
+        EXCLUSION_LIST = ['.woff', '.jpg', '.woff2', '.js', '.ug', '.active']
         old_value = match.group()
         if len(old_value) < 5:
             pass
-        elif old_value in ['.woff', '.jpg', '.woff2']:
+        elif old_value in EXCLUSION_LIST:
             pass
         else:
             old_value = old_value.replace('.', '')
             new_value = old_value+self.suffix
             self.styles[old_value] = new_value
 
-    def __prep_html(self):
+    def __init_html(self):
         html = self.html
         styles = self.styles
         pattern = 'class=\"(.[a-zA-Z-_ \d]+)\"'
@@ -68,6 +66,13 @@ class Refactor:
         tups_of_matches = [(match.group(), match.span()) for match in matches]
 
         return tups_of_matches, pattern, html
+
+    def __get_new_style_value(self, value):
+        if self.suffix not in value:
+            value = self.styles.get(value)
+            return value
+        else:
+            print(f"ERROR. SUFFIX IN CLASS: {value}")
 
     def __unpack_matches(self, matches, pattern, file_string):
         for index, match in enumerate(matches):
@@ -84,7 +89,7 @@ class Refactor:
                 for index3, style in enumerate(self.styles.keys()):
                     if style == class_name and self.suffix not in class_name:
                         temp_line = re.sub('[^\-]'+class_name,
-                                           " "+self.get_style_value(style), temp_line, count=1)
+                                           " "+self.__get_new_style_value(style), temp_line, count=1)
                     else:
                         continue
 
@@ -97,14 +102,17 @@ class Refactor:
 
             file_string = re.sub('('+line+')+', final_line, file_string)
 
-        self.write(file_string)
+        return file_string
 
     # =============================== USER METHODS ===============================
 
-    def create_styles(self):
-        css_matches, html_matches, js_matches = self.__load_regex()
+    def load_styles(self):
+        css_matches, html_matches, js_matches = self.__load_re_matches()
         for matchNum, match in enumerate(css_matches, start=1):
-            self.__create_dict(matchNum, match)
+            self.__create_styles_dict(matchNum, match)
+
+    def pp_styles(self):
+        print(*self.styles.items(), sep='\n')
 
     def write(self, data=None):
         if data == None:
@@ -116,25 +124,24 @@ class Refactor:
 
         print(f"FILES REFACTORED WITH SUFFIX: '{self.suffix}'")
 
-    def pp(self):
-        print(*self.styles.items(), sep='\n')
-
     # =============================== SANDBOX ===============================
 
-    def get_style_value(self, value):
-        if self.suffix not in value:
-            value = self.styles.get(value)
-            return value
-        else:
-            print(f"ERROR. SUFFIX IN CLASS: {value}")
-
     def re_html(self, html):
-        matches, pattern, html = self.__prep_html()
-        self.__unpack_matches(matches, pattern, html)
+        matches, pattern, html = self.__init_html()
+        refactored_html = self.__unpack_matches(matches, pattern, html)
+        self.write(refactored_html)
+
+    # def re_css(self, css):
+    #     css = self.css
+    #     pattern = r"""\.\D[^]['?#\s\r\n,{};:/\/\().]+"""
+    #     for line in css.splitlines():
+    #         print(line)
 
 
 if __name__ == "__main__":
     rf = Refactor()
-    rf.create_styles()
+    rf.load_styles()
     html = rf.html
     rf.re_html(html)
+    styles = rf.styles
+    css = rf.css
